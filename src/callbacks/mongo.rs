@@ -1,3 +1,5 @@
+use std::slice::SliceIndex;
+
 use mongodb::{
     bson::{doc, Document},
     sync::Client,
@@ -77,7 +79,7 @@ impl Callback for Mongo {
         let mut transactions: Vec<Document> = Vec::new();
 
         for tx in &block.txs {
-            transactions.push(tx.as_doc(&block_hash))
+            transactions.push(tx.as_doc(&block_hash, &self.tx_collection))
         }
         self.tx_collection.insert_many(transactions, None)?;
         self.tx_count += block.tx_count.value;
@@ -117,15 +119,15 @@ impl Block {
 
 impl Hashed<EvaluatedTx> {
     #[inline]
-    fn as_doc(&self, block_hash: &str) -> Document {
+    fn as_doc(&self, block_hash: &str, collection: &Collection<Document>) -> Document {
         let mut inputs: Vec<Document> = Vec::new();
         let mut outputs: Vec<Document> = Vec::new();
         let txid_str = &utils::arr_to_hex_swapped(&self.hash);
-        for input in &self.value.inputs {
-            inputs.push(input.as_doc(&txid_str))
+        for (i, input) in self.value.inputs.iter().enumerate() {
+            inputs.push(input.as_doc(&txid_str, i as i32, collection))
         }
         for (i, output) in self.value.outputs.iter().enumerate() {
-            outputs.push(output.as_doc(&txid_str, i as u32))
+            outputs.push(output.as_doc(&txid_str, i as i32))
         }
         doc! {
                     "txHash": &txid_str,
@@ -142,12 +144,22 @@ impl Hashed<EvaluatedTx> {
 
 impl TxInput {
     #[inline]
-    fn as_doc(&self, txid: &str) -> Document {
+    fn as_doc(&self, txid: &str, index: i32, collection: &Collection<Document>) -> Document {
+        let hash_prev_out = &utils::arr_to_hex_swapped(&self.outpoint.txid);
+        let index_prev_out = &self.outpoint.index;
+        // let prev_out_tx = collection.find_one(doc! {"txHash": hash_prev_out}, None);
+        //         match prev_out_tx {
+        //             Ok(Some(data)) => println!("res: {:?}", data.get_array("txOutputs")[index_prev_out]),
+        //             Ok(None) => println!("einfach nein"),
+        //             Err(e) => println!("einfach nein {:?}", e),
+        //         };
+        //
         // (@txid, @hashPrevOut, indexPrevOut, scriptSig, sequence)
         doc!(
             "txHash": &txid,
-            "hashPrevOut": &utils::arr_to_hex_swapped(&self.outpoint.txid),
-            "indexPrevOut": &self.outpoint.index,
+            "hashPrevOut": hash_prev_out,
+            "indexPrevOut": index_prev_out,
+            "indexIn": *&index,
             "scriptSig": &utils::arr_to_hex(&self.script_sig),
             "sequenceNumber": &self.seq_no
         )
@@ -156,7 +168,7 @@ impl TxInput {
 
 impl EvaluatedTxOut {
     #[inline]
-    fn as_doc(&self, txid: &str, index: u32) -> Document {
+    fn as_doc(&self, txid: &str, index: i32) -> Document {
         let address = match self.script.address.clone() {
             Some(address) => address,
             None => {
@@ -168,7 +180,7 @@ impl EvaluatedTxOut {
         // (@txid, indexOut, value, @scriptPubKey, address)
         doc!(
             "txHash": &txid,
-            "indexOut": *&index as i64,
+            "indexOut": *&index,
             "value": *&self.out.value as i64,
             "scriptPubKey": &utils::arr_to_hex(&self.out.script_pubkey),
             "address": &address
