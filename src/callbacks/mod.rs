@@ -7,6 +7,7 @@ use crate::errors::OpResult;
 pub mod balances;
 mod common;
 pub mod csvdump;
+pub mod mongo;
 pub mod stats;
 pub mod unspentcsvdump;
 

@@ -5,6 +5,7 @@ use std::io;
 use std::string;
 use std::sync;
 
+use mongodb;
 use rusty_leveldb::Status;
 
 use crate::blockchain::proto::script;
@@ -70,10 +71,20 @@ impl error::Error for OpError {
     }
 }
 
+// impl mongodb::error::Error for OpError {
+//     fn description(&self) -> &str {
+//         self.message.as_ref()
+//     }
+//     fn cause(&self) -> Option<&dyn error::Error> {
+//         self.kind.source()
+//     }
+// }
+
 #[derive(Debug)]
 pub enum OpErrorKind {
     None,
     IoError(io::Error),
+    MongodbError(mongodb::error::Error),
     ByteOrderError(io::Error),
     Utf8Error(string::FromUtf8Error),
     ScriptError(script::ScriptError),
@@ -91,6 +102,7 @@ impl fmt::Display for OpErrorKind {
         match *self {
             OpErrorKind::IoError(ref err) => write!(f, "I/O Error: {}", err),
             OpErrorKind::ByteOrderError(ref err) => write!(f, "ByteOrder: {}", err),
+            OpErrorKind::MongodbError(ref err) => write!(f, "MongodbError: {}", err),
             OpErrorKind::Utf8Error(ref err) => write!(f, "Utf8 Conversion: {}", err),
             OpErrorKind::ScriptError(ref err) => write!(f, "Script: {}", err),
             OpErrorKind::LevelDBError(ref err) => write!(f, "LevelDB: {}", err),
@@ -122,6 +134,11 @@ impl error::Error for OpErrorKind {
 impl From<io::Error> for OpError {
     fn from(err: io::Error) -> Self {
         Self::new(OpErrorKind::IoError(err))
+    }
+}
+impl From<mongodb::error::Error> for OpError {
+    fn from(err: mongodb::error::Error) -> Self {
+        Self::new(OpErrorKind::MongodbError(err))
     }
 }
 
