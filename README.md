@@ -181,4 +181,4 @@ If you find this project helpful, please consider making a donation:
 * [Link3](https://www.reddit.com/r/dogecoin/comments/2dz78g/of_wolves_and_weasels_day_223_countdown_to_371337/)
 * Block 371336 (Version 6422530) Block 371337 (Version 6422786)
 * After Block 371337 there are randomly Blocks with the prev. version 6422530 (371340, 371409, 371425, 371517, 371534 ...)
-* Blocks with version 6422786 have a nonce of 0 and gets always parsed with a tx count of 1
+* Blocks with version 6422786 have a nonce of 0 and gets always parsed with a tx count of 1 ```db.getCollection('blocks').find({$and: [{timestamp: {$gt: 1410464577}}, {version: 6422530}]})```
