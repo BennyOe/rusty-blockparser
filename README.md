@@ -173,3 +173,12 @@ If you find this project helpful, please consider making a donation:
 * Implement correct SegWit handling
 * Implement Pay2MultiSig script evaluation
 * Handle BECH32 addresses
+
+## Issues with Dogecoin
+* Dogecoin updated their blockchain to Aux-POW on 1Thu, 1 Sep 2014 19:42:57 UTC 
+* [https://en.bitcoin.it/wiki/Merged_mining_specification](Link1) 
+* [https://digiconomist.net/how-auxpow-affected-dogecoin-mining/](Link2)
+* [https://www.reddit.com/r/dogecoin/comments/2dz78g/of_wolves_and_weasels_day_223_countdown_to_371337/](Link3)
+* Block 371336 (Version 6422530) Block 371337 (Version 6422786)
+* After Block 371337 there are randomly Blocks with the prev. version 6422530 (371340, 371409, 371425, 371517, 371534 ...)
+* Blocks with version 6422786 have a nonce of 0 and gets always parsed with a tx count of 1
